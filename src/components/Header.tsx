@@ -41,10 +41,9 @@ const Header: React.FC<HeaderProps> = ({
               ref={fileInputRef}
             />
             <span className="file-cta">
-              <span className="file-icon">
-                <i className="fas fa-upload"></i>
+              <span className="file-label">
+                Choose a {tableData.length > 0 ? "new" : ""} CSV file…
               </span>
-              <span className="file-label">Choose a file…</span>
             </span>
           </label>
         </div>
@@ -52,7 +51,7 @@ const Header: React.FC<HeaderProps> = ({
         <div className="buttons">
           {clearConflictedCharacters && (
             <button
-              className="button is-danger "
+              className="button is-danger"
               onClick={clearConflictedCharacters}
             >
               Close Conflicts Table

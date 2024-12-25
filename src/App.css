@@ -1,0 +1,11 @@
+#root {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+}
+
+button,
+.dropdown-menu {
+  min-width: 200px;
+}

@@ -1,5 +1,5 @@
 import React from "react";
-import { CSVRow } from "../types";
+import { CSVRow, FilterOptions } from "../types";
 import Dropdown from "./Dropdown";
 
 type HeaderProps = {
@@ -8,7 +8,7 @@ type HeaderProps = {
   clearData: () => void;
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   searchQuery: string;
-  filterOption: string;
+  selectedFilter: FilterOptions;
   handleFilterChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   checkSameNamesSameProfessions: () => void;
   fileInputRef: React.RefObject<HTMLInputElement>;
@@ -21,7 +21,7 @@ const Header: React.FC<HeaderProps> = ({
   clearData,
   handleFileChange,
   searchQuery,
-  filterOption,
+  selectedFilter,
   handleFilterChange,
   checkSameNamesSameProfessions,
   fileInputRef,
@@ -76,7 +76,7 @@ const Header: React.FC<HeaderProps> = ({
               onChange={handleSearchChange}
             />
             <Dropdown
-              filters={{ filterOption }}
+              selectedFilter={selectedFilter}
               handleFilterChange={handleFilterChange}
             />
           </div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, ChangeEvent, useRef } from "react";
 import Papa from "papaparse";
 import "./App.css";
 import ConflictedDataTable from "./components/ConflictedDataTable";
-import { CSVRow } from "./types";
+import { CSVRow, FilterOptions } from "./types";
 import Header from "./components/Header";
 
 const App: React.FC = () => {
@@ -12,9 +12,9 @@ const App: React.FC = () => {
     []
   );
   const [headers, setHeaders] = useState<string[]>([]);
-  const [filters, setFilters] = useState<Record<string, string>>({
-    filterOption: "all",
-  });
+  const [selectedFilter, setSelectedFilter] = useState<FilterOptions>(
+    FilterOptions.All
+  );
   const [sortConfig, setSortConfig] = useState<{
     key: string;
     direction: "asc" | "desc";
@@ -29,7 +29,7 @@ const App: React.FC = () => {
     setHeaders([]);
     setFilteredData([]);
     setConflictedCharacters([]);
-    setFilters({ filterOption: "all" });
+    setSelectedFilter(FilterOptions.All);
     setSortConfig(null);
     setSearchQuery("");
 
@@ -87,7 +87,8 @@ const App: React.FC = () => {
   };
 
   const handleFilterChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    setFilters({ ...filters, filterOption: e.target.value });
+    const selectedValue = e.target.value as FilterOptions;
+    setSelectedFilter(selectedValue);
     setSortConfig(null);
     setSearchQuery("");
   };
@@ -108,14 +109,14 @@ const App: React.FC = () => {
       );
     }
 
-    // Apply filters
-    if (filters.filterOption === "uniqueCharacters") {
+    // Apply filter
+    if (selectedFilter === FilterOptions.UniqueCharacters) {
       data = Array.from(new Set(data.map((row) => row.name))).map((name) => ({
         name,
         profession: data.find((row) => row.name === name)?.profession || "",
       }));
     }
-    if (filters.filterOption === "uniqueProfessions") {
+    if (selectedFilter === FilterOptions.UniqueProfessions) {
       data = Array.from(new Set(data.map((row) => row.profession))).map(
         (profession) => ({
           profession,
@@ -149,7 +150,7 @@ const App: React.FC = () => {
   useEffect(() => {
     applyFiltersAndSorting();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, sortConfig, tableData, searchQuery]);
+  }, [selectedFilter, sortConfig, tableData, searchQuery]);
 
   const handleSort = (key: string) => {
     let direction: "asc" | "desc" = "asc";
@@ -200,7 +201,7 @@ const App: React.FC = () => {
         tableData={tableData}
         clearData={clearData}
         handleFileChange={handleFileChange}
-        filterOption={filters.filterOption}
+        selectedFilter={selectedFilter}
         handleFilterChange={handleFilterChange}
         searchQuery={searchQuery}
         checkSameNamesSameProfessions={checkSameNamesSameProfessions}

@@ -1,13 +1,20 @@
 import React from "react";
+import { FilterOptions } from "../types";
 
 type DropdownProps = {
-  filters: {
-    filterOption: string;
-  };
+  selectedFilter: FilterOptions;
   handleFilterChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 };
 
-const Dropdown: React.FC<DropdownProps> = ({ filters, handleFilterChange }) => {
+const Dropdown: React.FC<DropdownProps> = ({
+  selectedFilter,
+  handleFilterChange,
+}) => {
+  const options = [
+    { value: FilterOptions.All, label: "All Characters" },
+    { value: FilterOptions.UniqueCharacters, label: "Unique Characters" },
+    { value: FilterOptions.UniqueProfessions, label: "Unique Professions" },
+  ];
   return (
     <div className="dropdown is-hoverable">
       <div className="dropdown-trigger ">
@@ -17,47 +24,26 @@ const Dropdown: React.FC<DropdownProps> = ({ filters, handleFilterChange }) => {
           aria-controls="dropdown-menu"
         >
           <span>
-            {filters.filterOption === "all"
-              ? "All Characters"
-              : "Unique Characters"}
+            {options.find((option) => option.value === selectedFilter)?.label}
           </span>
         </button>
       </div>
       <div className="dropdown-menu" id="dropdown-menu" role="menu">
         <div className="dropdown-content">
-          <a
-            href="#"
-            className="dropdown-item"
-            onClick={() =>
-              handleFilterChange({
-                target: { value: "all" },
-              } as React.ChangeEvent<HTMLSelectElement>)
-            }
-          >
-            All Characters
-          </a>
-          <a
-            href="#"
-            className="dropdown-item"
-            onClick={() =>
-              handleFilterChange({
-                target: { value: "uniqueCharacters" },
-              } as React.ChangeEvent<HTMLSelectElement>)
-            }
-          >
-            Unique Characters
-          </a>
-          <a
-            href="#"
-            className="dropdown-item"
-            onClick={() =>
-              handleFilterChange({
-                target: { value: "uniqueProfessions" },
-              } as React.ChangeEvent<HTMLSelectElement>)
-            }
-          >
-            Unique Professions
-          </a>
+          {options.map((option) => (
+            <a
+              key={option.value}
+              href="#"
+              className="dropdown-item"
+              onClick={() =>
+                handleFilterChange({
+                  target: { value: option.value },
+                } as React.ChangeEvent<HTMLSelectElement>)
+              }
+            >
+              {option.label}
+            </a>
+          ))}
         </div>
       </div>
     </div>

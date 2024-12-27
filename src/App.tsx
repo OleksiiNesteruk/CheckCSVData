@@ -20,6 +20,7 @@ const App: React.FC = () => {
     direction: "asc" | "desc";
   } | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedCharacters, setSelectedCharacters] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const clearData = () => {
@@ -32,6 +33,7 @@ const App: React.FC = () => {
     setSelectedFilter(FilterOptions.All);
     setSortConfig(null);
     setSearchQuery("");
+    setSelectedCharacters([]);
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -194,6 +196,18 @@ const App: React.FC = () => {
     }
   };
 
+  const handleCharacterClick = (name: string) => {
+    if (!name) return;
+
+    setSelectedCharacters((prevSelected) => {
+      if (prevSelected.includes(name)) {
+        return prevSelected.filter((selectedName) => selectedName !== name);
+      } else {
+        return [...prevSelected, name];
+      }
+    });
+  };
+
   return (
     <div className="box" style={{ minWidth: "800px", margin: "0 auto" }}>
       <Header
@@ -241,7 +255,13 @@ const App: React.FC = () => {
             </thead>
             <tbody>
               {filteredData.map((row, rowIndex) => (
-                <tr key={rowIndex}>
+                <tr
+                  key={rowIndex}
+                  className={`is-clickable ${
+                    selectedCharacters.includes(row.name) ? "is-selected" : ""
+                  }`}
+                  onClick={() => handleCharacterClick(row.name)}
+                >
                   <td>{rowIndex + 1}</td>
                   {headers.map((header, colIndex) => (
                     <td key={colIndex}>{row[header] || "-"}</td>

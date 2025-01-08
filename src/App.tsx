@@ -260,7 +260,11 @@ const App: React.FC = () => {
                   className={`is-clickable ${
                     selectedCharacters.includes(row.name) ? "is-selected" : ""
                   }`}
-                  onClick={() => handleCharacterClick(row.name)}
+                  onClick={(event) => {
+                    if (event.metaKey) {
+                      handleCharacterClick(row.name);
+                    }
+                  }}
                 >
                   <td>{rowIndex + 1}</td>
                   {headers.map((header, colIndex) => (

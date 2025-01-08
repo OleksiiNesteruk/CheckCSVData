@@ -128,20 +128,30 @@ const App: React.FC = () => {
 
     if (sortConfig) {
       data.sort((a, b) => {
-        if (a[sortConfig.key] && b[sortConfig.key]) {
-          if (sortConfig.key === "file") {
-            const valueA = parseFloat(a[sortConfig.key].split(".")[0]);
-            const valueB = parseFloat(b[sortConfig.key].split(".")[0]);
-            const comparison = valueA - valueB;
-            return sortConfig.direction === "asc" ? comparison : -comparison;
-          } else {
-            const comparison = a[sortConfig.key].localeCompare(
-              b[sortConfig.key]
-            );
-            return sortConfig.direction === "asc" ? comparison : -comparison;
-          }
+        const valueA = a[sortConfig.key] || "";
+        const valueB = b[sortConfig.key] || "";
+        let comparison = 0;
+
+        if (valueA === "" && valueB !== "") {
+          return sortConfig.direction === "asc" ? 1 : -1;
         }
-        return 0;
+        if (valueB === "" && valueA !== "") {
+          return sortConfig.direction === "asc" ? -1 : 1;
+        }
+
+        const numA = valueA?.split(".")[0];
+        const numB = valueB?.split(".")[0];
+
+        const parsedNumA = Number(numA);
+        const parsedNumB = Number(numB);
+
+        if (!isNaN(parsedNumA) && !isNaN(parsedNumB)) {
+          comparison = parsedNumA - parsedNumB;
+        } else {
+          comparison = valueA.localeCompare(valueB);
+        }
+
+        return sortConfig.direction === "asc" ? comparison : -comparison;
       });
     }
 
@@ -245,7 +255,7 @@ const App: React.FC = () => {
                         textTransform: "capitalize",
                       }}
                     >
-                      {header}{" "}
+                      {header.replace(/_/g, " ")}{" "}
                       {sortConfig?.key === header &&
                         (sortConfig.direction === "asc" ? "↑" : "↓")}
                     </div>

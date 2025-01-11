@@ -132,11 +132,11 @@ const App: React.FC = () => {
         const valueB = b[sortConfig.key] || "";
         let comparison = 0;
 
-        if (valueA === "" && valueB !== "") {
-          return sortConfig.direction === "asc" ? 1 : -1;
+        if (valueA.length === 0 && valueB.length > 0) {
+          return 1; // valueA is empty, move it to the end
         }
-        if (valueB === "" && valueA !== "") {
-          return sortConfig.direction === "asc" ? -1 : 1;
+        if (valueB.length === 0 && valueA.length > 0) {
+          return -1; // valueB is empty, move it to the end
         }
 
         const numA = valueA?.split(".")[0];

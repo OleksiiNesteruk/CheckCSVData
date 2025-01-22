@@ -4,6 +4,10 @@ import "./App.css";
 import ConflictedDataTable from "./components/ConflictedDataTable";
 import { CSVRow, FilterOptions } from "./types";
 import Header from "./components/Header";
+import { sortData } from "./utils/sortData";
+import { filterBySearchQuery } from "./utils/filterBySearchQuery";
+import { filterBySelectedFilter } from "./utils/filterBySelectedFilter";
+import { checkSameNamesSameProfessions as checkConflicts } from "./utils/checkSameNamesSameProfessions";
 
 const App: React.FC = () => {
   const [tableData, setTableData] = useState<CSVRow[]>([]);
@@ -34,20 +38,14 @@ const App: React.FC = () => {
     setSortConfig(null);
     setSearchQuery("");
     setSelectedCharacters([]);
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const clearConflictedCharacters = () => {
-    setConflictedCharacters([]);
-  };
+  const clearConflictedCharacters = () => setConflictedCharacters([]);
 
   useEffect(() => {
     const savedData = localStorage.getItem("tableData");
     const savedHeaders = localStorage.getItem("tableHeaders");
-
     if (savedData && savedHeaders) {
       const parsedData = JSON.parse(savedData);
       setTableData(parsedData);
@@ -58,7 +56,6 @@ const App: React.FC = () => {
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-
     if (file && file.type === "text/csv") {
       Papa.parse<CSVRow>(file, {
         header: true,
@@ -68,10 +65,8 @@ const App: React.FC = () => {
             clearData();
             const parsedData = result.data;
             const parsedHeaders = Object.keys(parsedData[0]);
-
             localStorage.setItem("tableData", JSON.stringify(parsedData));
             localStorage.setItem("tableHeaders", JSON.stringify(parsedHeaders));
-
             setHeaders(parsedHeaders);
             setTableData(parsedData);
             setFilteredData(parsedData);
@@ -79,9 +74,7 @@ const App: React.FC = () => {
             console.warn("Uploaded CSV contains no data.");
           }
         },
-        error: (error) => {
-          console.error("Error parsing CSV:", error.message);
-        },
+        error: (error) => console.error("Error parsing CSV:", error.message),
       });
     } else {
       alert("Please upload a valid CSV file.");
@@ -89,84 +82,35 @@ const App: React.FC = () => {
   };
 
   const handleFilterChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const selectedValue = e.target.value as FilterOptions;
-    setSelectedFilter(selectedValue);
+    const newFilter = e.target.value as FilterOptions;
+    setSelectedFilter(newFilter);
     setSortConfig(null);
     setSearchQuery("");
+    updateFilteredData(tableData, newFilter, null, "");
   };
 
   const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
+    const newQuery = e.target.value;
+    setSearchQuery(newQuery);
+    updateFilteredData(tableData, selectedFilter, sortConfig, newQuery);
   };
 
-  const applyFiltersAndSorting = () => {
-    let data = [...tableData];
-
-    // Apply search filter
-    if (searchQuery) {
-      data = data.filter((row) =>
-        headers.some((header) =>
-          row[header].toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      );
-    }
-
-    // Apply filter
-    if (selectedFilter === FilterOptions.UniqueCharacters) {
-      data = Array.from(new Set(data.map((row) => row.name))).map((name) => ({
-        name,
-        profession: data.find((row) => row.name === name)?.profession || "",
-      }));
-    }
-    if (selectedFilter === FilterOptions.UniqueProfessions) {
-      data = Array.from(new Set(data.map((row) => row.profession))).map(
-        (profession) => ({
-          profession,
-        })
-      );
-    }
-
-    if (sortConfig) {
-      data.sort((a, b) => {
-        const valueA = a[sortConfig.key] || "";
-        const valueB = b[sortConfig.key] || "";
-        let comparison = 0;
-
-        if (valueA.length === 0 && valueB.length > 0) {
-          return 1; // valueA is empty, move it to the end
-        }
-        if (valueB.length === 0 && valueA.length > 0) {
-          return -1; // valueB is empty, move it to the end
-        }
-
-        const numA = valueA?.split(".")[0];
-        const numB = valueB?.split(".")[0];
-
-        const parsedNumA = Number(numA);
-        const parsedNumB = Number(numB);
-
-        if (!isNaN(parsedNumA) && !isNaN(parsedNumB)) {
-          comparison = parsedNumA - parsedNumB;
-        } else {
-          comparison = valueA.localeCompare(valueB);
-        }
-
-        return sortConfig.direction === "asc" ? comparison : -comparison;
-      });
-    }
-
-    setFilteredData(data);
-    setHeaders(() => (data[0] ? Object.keys(data[0]) : []));
+  const updateFilteredData = (
+    data: CSVRow[],
+    filter: FilterOptions,
+    config: { key: string; direction: "asc" | "desc" } | null,
+    query: string
+  ) => {
+    let filteredData = [...data];
+    filteredData = filterBySearchQuery(filteredData, query, headers);
+    filteredData = filterBySelectedFilter(filteredData, filter);
+    filteredData = sortData(filteredData, config);
+    setFilteredData(filteredData);
+    setHeaders(() => (filteredData[0] ? Object.keys(filteredData[0]) : []));
   };
-
-  useEffect(() => {
-    applyFiltersAndSorting();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedFilter, sortConfig, tableData, searchQuery]);
 
   const handleSort = (key: string) => {
     let direction: "asc" | "desc" = "asc";
-
     if (
       sortConfig &&
       sortConfig.key === key &&
@@ -174,48 +118,23 @@ const App: React.FC = () => {
     ) {
       direction = "desc";
     }
-
-    setSortConfig({ key, direction });
+    const newSortConfig = { key, direction };
+    setSortConfig(newSortConfig);
+    updateFilteredData(tableData, selectedFilter, newSortConfig, searchQuery);
   };
 
   const checkSameNamesSameProfessions = () => {
-    const professionMap: Record<string, Set<string>> = {};
-
-    tableData.forEach((row) => {
-      if (row.name) {
-        if (!professionMap[row.name]) {
-          professionMap[row.name] = new Set();
-        }
-        professionMap[row.name].add(row.profession);
-      }
-    });
-
-    const conflictingNames = Object.keys(professionMap).filter(
-      (name) => professionMap[name].size > 1
-    );
-
-    if (conflictingNames.length > 0) {
-      setConflictedCharacters(
-        conflictingNames.map((name) => ({
-          name,
-          profession: Array.from(professionMap[name]).join(", "),
-        }))
-      );
-    } else {
-      alert("Same names have the same professions.");
-    }
+    const conflicts = checkConflicts(tableData);
+    setConflictedCharacters(conflicts);
   };
 
   const handleCharacterClick = (name: string) => {
     if (!name) return;
-
-    setSelectedCharacters((prevSelected) => {
-      if (prevSelected.includes(name)) {
-        return prevSelected.filter((selectedName) => selectedName !== name);
-      } else {
-        return [...prevSelected, name];
-      }
-    });
+    setSelectedCharacters((prevSelected) =>
+      prevSelected.includes(name)
+        ? prevSelected.filter((selectedName) => selectedName !== name)
+        : [...prevSelected, name]
+    );
   };
 
   return (
@@ -236,7 +155,6 @@ const App: React.FC = () => {
             : undefined
         }
       />
-
       {conflictedCharacters.length > 0 && (
         <ConflictedDataTable conflictedCharacters={conflictedCharacters} />
       )}
@@ -250,10 +168,7 @@ const App: React.FC = () => {
                   <th key={index} title="Click to sort">
                     <div
                       onClick={() => handleSort(header)}
-                      style={{
-                        cursor: "pointer",
-                        textTransform: "capitalize",
-                      }}
+                      style={{ cursor: "pointer", textTransform: "capitalize" }}
                     >
                       {header.replace(/_/g, " ")}{" "}
                       {sortConfig?.key === header &&
@@ -271,9 +186,7 @@ const App: React.FC = () => {
                     selectedCharacters.includes(row.name) ? "is-selected" : ""
                   }`}
                   onClick={(event) => {
-                    if (event.metaKey) {
-                      handleCharacterClick(row.name);
-                    }
+                    if (event.metaKey) handleCharacterClick(row.name);
                   }}
                 >
                   <td>{rowIndex + 1}</td>
